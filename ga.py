@@ -1,5 +1,6 @@
 # GA
 import numpy as np
+import matplotlib.pyplot as plt
 
 def cal_pop_fitness(equation_inputs, pop):
     # Calculating the fitness value of each solution in the current population.
@@ -43,9 +44,74 @@ def mutation(offspring_crossover, num_mutations=1):
     # Mutation changes a number of genes as defined by the num_mutations argument. The changes are random.
     for idx in range(offspring_crossover.shape[0]):
         gene_idx = mutations_counter - 1
-        for mutation_num in range(num_mutations):
+        for _ in range(num_mutations):
             # The random value to be added to the gene.
             random_value = np.random.uniform(-1.0, 1.0, 1)
             offspring_crossover[idx, gene_idx] = offspring_crossover[idx, gene_idx] + random_value
             gene_idx = gene_idx + mutations_counter
     return offspring_crossover
+
+def cal_pop_fitness(equation_inputs, pop, opt = 0):
+    # Calculating the fitness value of each solution in the current population.
+    # Opt = 0 is the GAMSSR model
+    logr = equation_inputs[:,0] # n,
+    positions = pop@equation_inputs[:,1:].T
+    port_r = (positions*logr).astype(np.float64)
+    SSR = np.mean(port_r, axis = 1)/np.std(port_r, axis = 1)/(-np.sum(port_r[port_r<0]))
+    return SSR
+
+def GA_train(training_df, optimizing_selection=0, sol_per_pop=8, num_parents_mating=4, num_generations = 200):
+    """
+    Genetic algorithm parameters:
+        Mating pool size
+        Population size
+    """
+    #Inputs of the equation.
+    equation_inputs = training_df.values
+    # Number of the weights we are looking to optimize.
+    num_weights = training_df.shape[1]-1
+
+    # Defining the population size.
+    pop_size = (sol_per_pop,num_weights) 
+    # The population will have sol_per_pop chromosome 
+    # where each chromosome has num_weights genes.
+    
+    # Creating the initial population.
+    new_population = np.random.uniform(low=-1.0, high=1.0, size=pop_size)
+    # print(new_population)
+
+    best_outputs = []
+    
+    for generation in range(num_generations):
+    #     print("Generation : ", generation)
+        # Measuring the fitness of each chromosome in the population.
+        fitness = cal_pop_fitness(equation_inputs, new_population, optimizing_selection)
+
+        best_outputs.append(np.max(fitness))
+
+        # Selecting the best parents in the population for mating.
+        parents = ga.select_mating_pool(new_population, fitness, 
+                                          num_parents_mating)
+
+        # Generating next generation using crossover.
+        offspring_crossover = ga.crossover(parents,
+                                           offspring_size=(pop_size[0]-parents.shape[0], num_weights))
+
+        # Adding some variations to the offspring using mutation.
+        offspring_mutation = ga.mutation(offspring_crossover, num_mutations=2)
+
+        # Creating the new population based on the parents and offspring.
+        new_population[0:parents.shape[0], :] = parents
+        new_population[parents.shape[0]:, :] = offspring_mutation
+
+    # Getting the best solution after iterating finishing all generations.
+    # At first, the fitness is calculated for each solution in the final generation.
+    fitness = cal_pop_fitness(equation_inputs, new_population, optimizing_selection)
+    # Then return the index of that solution corresponding to the best fitness.
+    best_match_idx = np.where(fitness == np.max(fitness))
+        
+    plt.plot(best_outputs)
+    plt.xlabel("Iteration")
+    plt.ylabel('SSR ratio')
+    plt.show()
+    return new_population[best_match_idx]
