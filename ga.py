@@ -90,15 +90,15 @@ def GA_train(training_df, optimizing_selection=0, sol_per_pop=8, num_parents_mat
         best_outputs.append(np.max(fitness))
 
         # Selecting the best parents in the population for mating.
-        parents = ga.select_mating_pool(new_population, fitness, 
+        parents = select_mating_pool(new_population, fitness, 
                                           num_parents_mating)
 
         # Generating next generation using crossover.
-        offspring_crossover = ga.crossover(parents,
+        offspring_crossover = crossover(parents,
                                            offspring_size=(pop_size[0]-parents.shape[0], num_weights))
 
         # Adding some variations to the offspring using mutation.
-        offspring_mutation = ga.mutation(offspring_crossover, num_mutations=2)
+        offspring_mutation = mutation(offspring_crossover, num_mutations=2)
 
         # Creating the new population based on the parents and offspring.
         new_population[0:parents.shape[0], :] = parents
