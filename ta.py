@@ -10,21 +10,26 @@ def count_trade_no(signal):
             no_trades += 1
     return no_trades
 
+# Exponential moving average
 def ema(series, n):
     return series.ewm(span=n, min_periods=n).mean()
 
+# Moving average
 def ma(close, n):
     return close.rolling(n).mean()
-    
+  
+# Double exponential moving average
 def DEMA(close, n):
     EMA = ema(close, n)
     return 2*EMA - ema(EMA,n)
 
+# Tripple exponetial moving average
 def TEMA(close, n):
     EMA = ema(close, n)
     EEMA = ema(EMA, n)
     return 3*EMA - 3*EEMA + ema(EEMA, n)
 
+# Relative strength index
 def rsi(close, n=14):
     diff = close.diff(1)
     which_dn = diff < 0
@@ -35,6 +40,7 @@ def rsi(close, n=14):
     rsi = 100 * emaup / (emaup + emadn)
     return pd.Series(rsi, name='rsi')
 
+# Stochastic
 def stoch(high, low, close, n=14, fillna=False):
     smin = low.rolling(n, min_periods=0).min()
     smax = high.rolling(n, min_periods=0).max()
@@ -86,7 +92,7 @@ def vortex_indicator_neg(high, low, close, n=14, fillna=False):
     if fillna:
         vin = vin.replace([np.inf, -np.inf], np.nan).fillna(1)
     return pd.Series(vin, name='vin')
-
+# Commodity channel index
 def cci(high, low, close, n=20, c=0.015):
     pp = (high + low + close) / 3.0
     cci = (pp - pp.rolling(n, min_periods=0).mean()) / (c * pp.rolling(n, min_periods=0).std())
